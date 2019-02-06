@@ -1,9 +1,17 @@
 # proxyAPI
+
 ## Basic HTTP Proxy API created with NodeJS.
 
-Application only supports GET and POST requests at the moment. Here are the example usages for the APIs.
+### Prerequisites to run the application:
+- Node.js® should be installed in the system. (You can download it from the following link: https://nodejs.org/)
 
-Application is running on localhost:8000.
+### Running the application:
+-  Just execute the following command on the root folder of the application:
+   #### > node proxy_app.js
+
+Application only supports GET and POST requests at the moment. 
+
+Application is running on localhost:8000. Here are the example usages for the APIs.
 
 ### On a GET request, it makes a get request to http://localhost:8000/proxy/<url> 
 
