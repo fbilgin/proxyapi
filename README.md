@@ -4,10 +4,12 @@
 
 ### Prerequisites to run the application:
 - Node.js® should be installed in the system. (You can download it from the following link: https://nodejs.org/)
+- Following command should be executed on the root folder of the application to download the dependencies of the application:
+  #### > npm install express
 
 ### Running the application:
--  Just execute the following command on the root folder of the application:
-   #### > node proxy_app.js
+- Just execute the following command on the root folder of the application:
+  #### > node proxy_app.js
 
 Application only supports GET and POST requests at the moment. 
 
