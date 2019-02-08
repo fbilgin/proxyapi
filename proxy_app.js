@@ -54,7 +54,7 @@ function getRequestOptions(req) {
 		headers: req.headers
 	};
 	// Need to replace the host information on the header object
-	options.headers["host"] = parsedUrl.hostname;
+	options.headers["Host"] = parsedUrl.hostname;
 	console.log(options);
 	return options;
 }
@@ -77,20 +77,7 @@ const getContent = function (options, formData) {
 			} = proxy_res;
 			const contentType = proxy_res.headers['content-type'];
 
-			let error;
-			if (statusCode !== 200) {
-				error = new Error('Request Failed.\n' +
-					`Status Code: ${statusCode}`);
-			} else if (!/^application\/json/.test(contentType)) {
-				error = new Error('Invalid content-type.\n' +
-					`Expected application/json but received ${contentType}`);
-			}
-			if (error) {
-				// consume response data to free up memory
-				proxy_res.resume();
-				reject(error);
-				return;
-			}
+			console.log(options.hostname + ' - Status Code:' + proxy_res.statusCode);
 
 			proxy_res.setEncoding('utf8');
 			let rawData = '';
@@ -99,7 +86,7 @@ const getContent = function (options, formData) {
 			});
 			proxy_res.on('end', () => {
 				try {
-					resolve(JSON.parse(rawData));
+					resolve(rawData);
 				} catch (e) {
 					reject(e);
 				}
@@ -124,7 +111,7 @@ app.get("/proxy/**", (req, res) => {
 	var presp = getContent(options);
 	presp.then(function (response) {
 		console.log(response);
-		res.write(JSON.stringify(response));
+		res.write(response);
 		res.end();
 	})
 	.catch(function (err) {
@@ -141,7 +128,7 @@ app.post("/proxy/**", (req, res) => {
 	var presp = getContent(options, req.body);
 	presp.then(function (response) {
 		console.log(response);
-		res.write(JSON.stringify(response));
+		res.write(response);
 		res.end();
 	})
 	.catch(function (err) {
