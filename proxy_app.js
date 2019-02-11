@@ -3,6 +3,7 @@ const URL = require('url');
 var qs = require('querystring');
 var app = express();
 const bodyParser = require("body-parser");
+var redirect_count = 0;
 
 app.listen(8000, () => {
 	console.log("HTTP Proxy Server running on port 8000");
@@ -72,25 +73,61 @@ const getContent = function (options, formData) {
 		const lib = options.protocol.startsWith('https') ? require('https') : require('http');
 
 		var pRequest = lib.request(options, (proxy_res) => {
-			const {
-				statusCode
-			} = proxy_res;
+
 			const contentType = proxy_res.headers['content-type'];
 
 			console.log(options.hostname + ' - Status Code:' + proxy_res.statusCode);
 
 			proxy_res.setEncoding('utf8');
-			let rawData = '';
-			proxy_res.on('data', (chunk) => {
-				rawData += chunk;
-			});
-			proxy_res.on('end', () => {
-				try {
-					resolve(rawData);
-				} catch (e) {
-					reject(e);
+
+			// Detect a redirect
+			if (proxy_res.statusCode > 300 && proxy_res.statusCode < 400 && proxy_res.headers.location) {
+				redirect_count++;
+				if (redirect_count > 10) {
+					reject("Too many redirects. Stopped redirecting after 10 tries...");
 				}
-			});
+				// The location for some (most) redirects will only contain the path, not the hostname;
+				// detect this and add the host to the path.
+				if (URL.parse(proxy_res.headers.location).hostname) {
+					// Hostname included; make request to proxy_res.headers.location
+					options.hostname = URL.parse(proxy_res.headers.location).hostname;
+					options.headers["Host"] = options.hostname;
+
+					var predirectwh = getContent(options);
+					predirectwh.then(function (response) {
+							resolve(response);
+						})
+						.catch(function (err) {
+							reject(err);
+						});
+				} else {
+					// Hostname not included; get host from requested URL (url.parse()) and prepend to location.
+					options.hostname = options.hostname + URL.parse(proxy_res.headers.location);
+					options.headers["Host"] = options.hostname;
+
+					var predirectwoh = getContent(options);
+					predirectwoh.then(function (response) {
+							resolve(response);
+						})
+						.catch(function (err) {
+							reject(err);
+						});
+				}
+
+		    // Otherwise no redirect; capture the response as normal       
+			} else {
+				let rawData = '';
+				proxy_res.on('data', (chunk) => {
+					rawData += chunk;
+				});
+				proxy_res.on('end', () => {
+					try {
+						resolve(rawData);
+					} catch (e) {
+						reject(e);
+					}
+				});
+			}
 		}).on('error', (e) => {
 			reject(e);
 		});
@@ -110,13 +147,13 @@ app.get("/proxy/**", (req, res) => {
 
 	var presp = getContent(options);
 	presp.then(function (response) {
-		console.log(response);
-		res.write(response);
-		res.end();
-	})
-	.catch(function (err) {
-		console.error(err);
-	});
+			console.log(response);
+			res.write(response);
+			res.end();
+		})
+		.catch(function (err) {
+			console.error(err);
+		});
 });
 
 /**
@@ -127,11 +164,11 @@ app.post("/proxy/**", (req, res) => {
 
 	var presp = getContent(options, req.body);
 	presp.then(function (response) {
-		console.log(response);
-		res.write(response);
-		res.end();
-	})
-	.catch(function (err) {
-		console.error(err);
-	});
+			console.log(response);
+			res.write(response);
+			res.end();
+		})
+		.catch(function (err) {
+			console.error(err);
+		});
 });
